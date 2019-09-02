@@ -18,6 +18,8 @@ class SPRING_DTW {
     SPRING_DTW(ArrayList<Double> temp){
         template = temp;
 
+        //かえたよーーー
+
         ArrayList<Double> distanceCol = new ArrayList<>();
         ArrayList<Integer> startCol = new ArrayList<>();
         for (int i=0; i<=template.size(); i++){
