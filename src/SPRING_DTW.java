@@ -12,8 +12,8 @@ class SPRING_DTW {
     private int t_start, t_end;
     private double d_min;
 
-    public static final int TempOnSet=2;
-    public static final int TempOffSet=32;
+    public static final int TempOnSet=5;
+    public static final int TempOffSet=25;
 
     SPRING_DTW(ArrayList<Double> temp){
         template = temp;
@@ -22,7 +22,7 @@ class SPRING_DTW {
         ArrayList<Integer> startCol = new ArrayList<>();
         for (int i=0; i<=template.size(); i++){
             if (i==0){
-                distanceCol.add(0.0);
+                distanceCol.add(Double.POSITIVE_INFINITY);
                 startCol.add(0);
             }
             else {
@@ -35,10 +35,16 @@ class SPRING_DTW {
         d_min = Double.POSITIVE_INFINITY;
     }
 
-    boolean calcFirst(double newValue, int t, double e){
+    boolean calcBustub(double newValue, int t, double e, int onset){
         streamingData.add(newValue);
         ArrayList<Double> distanceCol = new ArrayList<>();
-        distanceCol.add(0.0); //入力データは始端点フリー
+        ////distanceCol.add(0.0); //入力データは始端点フリー
+        if (t == onset){
+            distanceCol.add(0.0);
+        }
+        else {
+            distanceCol.add(Double.POSITIVE_INFINITY); //入力データは始端点固定
+        }
         distance.add(distanceCol);
 
         ArrayList<Integer> startCol = new ArrayList<>();
@@ -55,7 +61,12 @@ class SPRING_DTW {
                 //傾斜制限かける
                 A = distance.get(t-1).get(i); //横から
                 B = distance.get(t-1).get(i-1); //傾き1の斜めから
-                C = Double.POSITIVE_INFINITY;//distance.get(t-1).get(i-2); //傾き2の斜めから
+                if (i >= 2){
+                    C = distance.get(t-1).get(i-2); //傾き2の斜めから
+                }
+                else {
+                    C = Double.POSITIVE_INFINITY;
+                }
 
                 //最小値を選択
                 if(A <= B && A <= C){
@@ -124,10 +135,17 @@ class SPRING_DTW {
         return false;
     }
 
-    boolean calcOptimal(double newValue, int t, double e){
+    boolean calcLongV(double newValue, int t, double e, int onset){
         streamingData.add(newValue);
         ArrayList<Double> distanceCol = new ArrayList<>();
-        distanceCol.add(0.0); //入力データは始端点フリー
+        //distanceCol.add(0.0); //入力データは始端点フリー
+        if (t == onset){
+            distanceCol.add(0.0);
+        }
+        else {
+            distanceCol.add(Double.POSITIVE_INFINITY); //入力データは始端点固定
+        }
+
         distance.add(distanceCol);
 
         ArrayList<Integer> startCol = new ArrayList<>();
@@ -140,24 +158,45 @@ class SPRING_DTW {
             int si;
             double A,B,C;
 
-            //傾斜制限無し
-            A = distance.get(t).get(i-1); //di-1，下から
-            B = distance.get(t-1).get(i); //d'i，横から
-            C = distance.get(t-1).get(i-1); //d'i-1，斜めから
+            if (i>=TempOnSet && i<TempOffSet){
+                //傾斜制限かける
+                A = distance.get(t).get(i-1); //下から
+                B = distance.get(t-1).get(i-1); //傾き1の斜めから
+                C = distance.get(t-2).get(i-1); //傾き1/2の斜めから
 
-
-            //最小値を選択
-            if(A <= B && A <= C){
-                d_best = A;
-                si = start.get(t).get(i-1);
-            }
-            else if (B <= C){
-                d_best = B;
-                si = start.get(t-1).get(i);
+                //最小値を選択
+                if(A <= B && A <= C){
+                    d_best = A;
+                    si = start.get(t).get(i-1);
+                }
+                else if (B <= C){
+                    d_best = B;
+                    si = start.get(t-1).get(i-1);
+                }
+                else {
+                    d_best = C;
+                    si = start.get(t-2).get(i-1);
+                }
             }
             else {
-                d_best = C;
-                si = start.get(t-1).get(i-1);
+                //傾斜制限無し
+                A = distance.get(t).get(i - 1); //di-1，下から
+                B = distance.get(t - 1).get(i); //d'i，横から
+                C = distance.get(t - 1).get(i - 1); //d'i-1，斜めから
+
+                //最小値を選択
+                if(A <= B && A <= C){
+                    d_best = A;
+                    si = start.get(t).get(i-1);
+                }
+                else if (B <= C){
+                    d_best = B;
+                    si = start.get(t-1).get(i);
+                }
+                else {
+                    d_best = C;
+                    si = start.get(t-1).get(i-1);
+                }
             }
 
             start.get(t).add(si);
@@ -165,8 +204,6 @@ class SPRING_DTW {
             di = Math.pow(newValue-template.get(i-1), 2) + d_best;
             distance.get(t).add(di);
         }
-
-        //System.out.println(t + "，" + distance.get(t).get(template.size()) + "，" + start.get(t).get(template.size()));
 
         if (d_min <= e){
             ArrayList<Double> temp = new ArrayList<>(distance.get(t));
@@ -187,17 +224,6 @@ class SPRING_DTW {
                 System.out.println("開始点：" + t_start);
                 System.out.println("終了点：" + t_end);
 
-                //Reset d_min and the array of d_i
-                /*
-                d_min = Double.POSITIVE_INFINITY;
-                for (int i=1; i<=template.size(); i++){
-                    if (start.get(t).get(i) <= t_end){
-                        distance.get(t).remove(i);
-                        distance.get(t).add(i, Double.POSITIVE_INFINITY);
-                    }
-                }
-                */
-
                 return true;
             }
         }
@@ -212,10 +238,17 @@ class SPRING_DTW {
     }
 
 
-    void addDataPathRestriction(double newValue, int t){
+    void addDataBustub(double newValue, int t, int onset){
         streamingData.add(newValue);
         ArrayList<Double> distanceCol = new ArrayList<>();
-        distanceCol.add(0.0); //入力データは始端点フリー
+        //distanceCol.add(0.0); //入力データは始端点フリー
+        if (t == onset){
+            distanceCol.add(0.0);
+        }
+        else {
+            distanceCol.add(Double.POSITIVE_INFINITY); //入力データは始端点固定
+        }
+
         distance.add(distanceCol);
 
         ArrayList<Integer> startCol = new ArrayList<>();
@@ -232,7 +265,12 @@ class SPRING_DTW {
                 //傾斜制限かける
                 A = distance.get(t-1).get(i); //横から
                 B = distance.get(t-1).get(i-1); //傾き1の斜めから
-                C = distance.get(t-1).get(i-2); //傾き2の斜めから
+                if (i>=2){
+                    C = distance.get(t-1).get(i-2); //傾き2の斜めから
+                }
+                else {
+                    C = Double.POSITIVE_INFINITY;
+                }
 
                 //最小値を選択
                 if(A <= B && A <= C){
@@ -278,10 +316,17 @@ class SPRING_DTW {
         addSmoothingDTWDiff(t);
     }
 
-    void addDataNormal(double newValue, int t){
+    void addDataLongV(double newValue, int t, int onset){
         streamingData.add(newValue);
         ArrayList<Double> distanceCol = new ArrayList<>();
-        distanceCol.add(0.0); //入力データは始端点フリー
+        //distanceCol.add(0.0); //入力データは始端点フリー
+        if (t == onset){
+            distanceCol.add(0.0);
+        }
+        else {
+            distanceCol.add(Double.POSITIVE_INFINITY); //入力データは始端点固定
+        }
+
         distance.add(distanceCol);
 
         ArrayList<Integer> startCol = new ArrayList<>();

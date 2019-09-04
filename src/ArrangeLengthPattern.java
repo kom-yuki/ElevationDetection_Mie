@@ -79,14 +79,14 @@ public class ArrangeLengthPattern {
                     if (select.equals("bustub")) {
                         rest1_new = method.scaling(rest1, 5);
                         elevation_new = method.scaling(elevation, 20);
-                        rest2_new = method.scaling(rest2, 20);
+                        rest2_new = method.scaling(rest2, 10);
                     } else if (select.equals("longV")) {
                         rest1_new = method.scaling(rest1, 5);
                         elevation_new = method.scaling(elevation, 20);
-                        rest2_new = method.scaling(rest2, 0);
+                        rest2_new = method.scaling(rest2, 10);
                     } else {
-                        rest1_new = method.scaling(rest1, 5);
-                        elevation_new = method.scaling(elevation, 20);
+                        rest1_new = method.scaling(rest1, 0);
+                        elevation_new = method.scaling(elevation, 30);
                         rest2_new = method.scaling(rest2, 10);
                     }
 

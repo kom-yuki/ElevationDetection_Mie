@@ -9,6 +9,7 @@ public class checkSwallow {
     private ArrayList<Double> smoothingDiff;
     private ArrayList<Double> dtwDistance;
     private SPRING_DTW spring_dtw;
+    private int onset = (int) Double.POSITIVE_INFINITY;
 
     checkSwallow(ArrayList<Double> temp){
         diff = new ArrayList<>();
@@ -49,10 +50,10 @@ public class checkSwallow {
         }
         else {
             if (smoothingDiff.get(time) > average + 1.5*rangeDiff) {
+                onset = time;
                 return true;
             }
         }
-
         return false;
     }
 
@@ -60,29 +61,33 @@ public class checkSwallow {
         boolean detection;
 
         if (select == 1){
-            detection =  spring_dtw.calcOptimal(data.get(time), time + 1, 3.0); //長いV字型
+            detection =  spring_dtw.calcLongV(data.get(time), time + 1, 3.0, onset+1); //長いV字型
         }
         else if(select == 2) {
-            detection = spring_dtw.calcFirst(data.get(time), time + 1, 6.0); //バスタブ型
+            detection = spring_dtw.calcBustub(data.get(time), time + 1, 6.0, onset+1); //バスタブ型
         }
         else {
-            detection = spring_dtw.calcOptimal(data.get(time), time + 1, 4.0); //間の形
+            detection = spring_dtw.calcLongV(data.get(time), time + 1, 4.0, onset+1); //間の形
         }
         dtwDistance.add(spring_dtw.getDistance().get(time + 1).get(template.size()));
 
         return detection;
     }
 
-    void addData(ArrayList<Double> data, int time, int select){
+    void addData(ArrayList<Double> data, int time, int select, int on){
+
+        if (onset == (int) Double.POSITIVE_INFINITY){
+            onset = on;
+        }
 
         if (select == 1){
-            spring_dtw.addDataNormal(data.get(time), time+1);
+            spring_dtw.addDataLongV(data.get(time), time+1, onset+1);
         }
         else if (select == 2){
-            spring_dtw.addDataPathRestriction(data.get(time), time+1);
+            spring_dtw.addDataBustub(data.get(time), time+1, onset+1);
         }
         else {
-            spring_dtw.addDataNormal(data.get(time), time+1);
+            spring_dtw.addDataLongV(data.get(time), time+1, onset+1);
         }
 
         dtwDistance.add(spring_dtw.getDistance().get(time+1).get(template.size()));

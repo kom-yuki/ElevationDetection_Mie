@@ -13,7 +13,7 @@ public class ElevationDetection {
         //テンプレートの読み込み
         ArrayList<Double> template1 = new ArrayList<>();
         ArrayList<Double> template2 = new ArrayList<>();
-        ArrayList<Double> template3 = new ArrayList<>();
+        //ArrayList<Double> template3 = new ArrayList<>();
 
         BufferedReader br = new BufferedReader(new FileReader("./Template/longV.dat"));
         String line;
@@ -28,10 +28,12 @@ public class ElevationDetection {
         }
         br.close();
 
+        /*
         br = new BufferedReader(new FileReader("./Template/bustub_longV.dat"));
         while((line = br.readLine()) != null){
             template3.add(Double.parseDouble(line));
         }
+        */
         br.close();
 
 
@@ -66,7 +68,7 @@ public class ElevationDetection {
 
                 checkSwallow check1 = new checkSwallow(template1);
                 checkSwallow check2 = new checkSwallow(template2);
-                checkSwallow check3 = new checkSwallow(template3);
+                //checkSwallow check3 = new checkSwallow(template3);
 
 
                 //一行づつ読み込んで，挙上判定（リアルタイム挙上判定）
@@ -90,9 +92,9 @@ public class ElevationDetection {
                             onset = time;
                             flagDetection = 1;
                         }
-                        check1.addData(data, time, 1);
-                        check2.addData(data, time, 2);
-                        check3.addData(data, time, 3);
+                        check1.addData(data, time, 1, onset);
+                        check2.addData(data, time, 2, onset);
+                        //check3.addData(data, time, 3, onset);
                     }
                     else if (flagDetection == 1 && time >= onset + 15){
                         //select = 1はSPRINGで最適部分検出，select = 2は最初に閾値下回った部分を検出
@@ -101,28 +103,33 @@ public class ElevationDetection {
                             detectedPoint = time;
                             offset = check1.getSPRING_DTW().getT_end() - 1;
                             flagDetection = 2;
-                            check2.addData(data, time, 2);
-                            check3.addData(data, time, 3);
+                            check2.addData(data, time, 2, onset);
+                            //check3.addData(data, time, 3, onset);
                         }
                         else if (check2.checkOffset(data, time, 2) ){
                             usedTemplate = 2;
                             offset = time - 1;
                             flagDetection = 2;
-                            check3.addData(data, time, 3);
-                        }
+                            //check3.addData(data, time, 3, onset);
+                        }/*
                         else if (check3.checkOffset(data, time, 3)){
                             usedTemplate = 3;
                             detectedPoint = time;
                             offset = check3.getSPRING_DTW().getT_end() - 1;
                             flagDetection = 2;
                         }
+                        */
                     }
                     else{
-                        check1.addData(data, time, 1);
-                        check2.addData(data, time, 2);
-                        check3.addData(data, time, 3);
+                        check1.addData(data, time, 1, onset);
+                        check2.addData(data, time, 2, onset);
+                        //check3.addData(data, time, 3, onset);
                     }
                     time++;
+                }
+
+                if (file.getName().equals("20190425093329.dat")){
+                    System.out.println("aaa");
                 }
 
                 //DTW距離確認用
@@ -130,14 +137,15 @@ public class ElevationDetection {
                 for (int t=0; t<time; t++){
                     double DTWDistance = check1.getDTW().get(t);
                     double DTWDistance2 = check2.getDTW().get(t);
-                    double DTWDistance3 = check3.getDTW().get(t);
+                    //double DTWDistance3 = check3.getDTW().get(t);
                     double smoothingDTWDiff = check2.getSPRING_DTW().getSmoothingDTWDiff().get(t);
 
-                    if (t<onset + 15){
+                    if (t<onset){
                         fw_distance.write(",,,\n");
                     }
                     else {
-                        fw_distance.write(String.valueOf(DTWDistance) + "," + String.valueOf(DTWDistance2) + "," + String.valueOf(DTWDistance3) + ",," + String.valueOf(smoothingDTWDiff)+"\n");
+                        //fw_distance.write(String.valueOf(DTWDistance) + "," + String.valueOf(DTWDistance2) + "," + String.valueOf(DTWDistance3) + ",," + String.valueOf(smoothingDTWDiff)+"\n");
+                        fw_distance.write(String.valueOf(DTWDistance) + "," + String.valueOf(DTWDistance2) + "," + ",," + String.valueOf(smoothingDTWDiff)+"\n");
                     }
                 }
                 fw_distance.close();
